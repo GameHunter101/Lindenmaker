@@ -15,6 +15,40 @@ pub fn progress(start: &str, constants: &[char], rules: &Rules) -> String {
         .collect()
 }
 
+pub fn separate_stack_strings(input: &str) -> Vec<String> {
+    if input.is_empty() || !input.contains(']') {
+        return vec![input.chars().filter(|c| c != &'[').collect()];
+    }
+
+    let mut end_index = -1;
+    let char_indices: Vec<(usize, char)> = input.char_indices().collect();
+    for (i, c) in &char_indices {
+        if c == &']' {
+            end_index = *i as i32;
+            break;
+        }
+    }
+
+    let mut start_index = -1;
+    for i in (0..end_index).rev() {
+        if char_indices[i as usize].1 == '[' {
+            start_index = i;
+            break;
+        }
+    }
+
+    let base_string = char_indices[..end_index as usize]
+        .iter()
+        .flat_map(|(_, e)| if e == &'[' { None } else { Some(*e) })
+        .collect();
+
+    let other_strings = separate_stack_strings(
+        &(input[..start_index as usize].to_string() + &input[end_index as usize + 1..]),
+    );
+
+    vec![base_string].into_iter().chain(other_strings).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
