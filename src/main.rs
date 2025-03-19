@@ -1,3 +1,4 @@
+mod lindenmayer;
+
 fn main() {
-    println!("Hello, world!");
 }
