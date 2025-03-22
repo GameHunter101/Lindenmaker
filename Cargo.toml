@@ -1,6 +1,16 @@
 [package]
 name = "l_system_visualizer"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 
 [dependencies]
+algoe = {git = "https://github.com/GameHunter101/algoe"}
+async-scoped = "0.9.0"
+async-trait = "0.1.88"
+bytemuck = "1.22.0"
+nalgebra = "0.33.2"
+tokio = "1.44.1"
+v4 = {git = "https://github.com/GameHunter101/V4-Engine"}
+wgpu = "24.0.3"
+winit = "0.30.9"
+winit_input_helper = "0.16.0"
