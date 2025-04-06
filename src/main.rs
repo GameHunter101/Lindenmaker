@@ -1,3 +1,4 @@
+use core::f32;
 use std::collections::{HashMap, HashSet};
 
 use lindenmayer::{progress, separate_stack_strings};
@@ -13,6 +14,7 @@ use v4::{
 use wgpu::vertex_attr_array;
 
 mod lindenmayer;
+mod lindenmayer_component;
 
 #[tokio::main]
 async fn main() {
@@ -38,13 +40,40 @@ async fn main() {
 
     let string = "F+F-F-F+F";
 
-    let alphabet: Vec<char> = vec!['F', '+', '-'];//string.chars().collect::<HashSet<_>>().into_iter().collect();
+    let alphabet: Vec<char> = vec!['F', '+', '-']; //string.chars().collect::<HashSet<_>>().into_iter().collect();
     let string_as_nums: Vec<u32> = string
         .chars()
         .map(|c| alphabet.iter().position(|e| *e == c).unwrap() as u32)
         .collect();
 
     let device = engine.rendering_manager().device();
+
+    /* let matrices = [
+        nalgebra::Matrix3::new(1.0, 0.0, 0.1, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+        nalgebra::Rotation2::new(f32::consts::FRAC_PI_2).to_homogeneous(),
+        nalgebra::Rotation2::new(-f32::consts::FRAC_PI_2).to_homogeneous(),
+    ]; */
+
+    /* let raw_matrices: [[[f32; 4]; 3]; 3] = matrices
+    .into_iter()
+    .map(|mat| {
+        let arrs = nalgebra::Matrix4x3::from_rows(&[
+            mat.row(0).into(),
+            mat.row(1).into(),
+            mat.row(2).into(),
+            nalgebra::RowVector3::new(0.0_f32, 0.0, 0.0),
+        ]);
+        arrs.into()
+    })
+    .collect::<Vec<_>>()
+    .try_into()
+    .unwrap(); */
+
+    let params = [
+        Param(0, 0.1, 0.0),
+        Param(1, f32::consts::FRAC_PI_2, 0.0),
+        Param(1, -f32::consts::FRAC_PI_2, 0.0),
+    ];
 
     scene! {
         scene: main,
@@ -92,6 +121,14 @@ async fn main() {
                                 wgpu::BufferBindingType::Storage { read_only: true },
                                 wgpu::ShaderStages::COMPUTE
                             )
+                        ),
+                        ShaderAttachment::Buffer(
+                            ShaderBufferAttachment::new(
+                                device,
+                                bytemuck::cast_slice(&[params]),
+                                wgpu::BufferBindingType::Uniform,
+                                wgpu::ShaderStages::COMPUTE
+                            )
                         )
                     ],
                     output:
@@ -104,7 +141,7 @@ async fn main() {
                             )
                         ),
                     shader_path: "./shaders/compute.wgsl",
-                    workgroup_counts: (1, 0, 0),
+                    workgroup_counts: (1, 1, 1),
                 )
             ]
         }
@@ -136,7 +173,7 @@ impl VertexDescriptor for Vertex {
 pub struct VertexPositions {
     positions: [[f32; 4]; 20],
     count: u32,
-    padding: [f32;3],
+    padding: [f32; 3],
 }
 
 impl Default for VertexPositions {
@@ -144,7 +181,11 @@ impl Default for VertexPositions {
         Self {
             positions: [[0.0; 4]; 20],
             count: 0,
-            padding: [0.0;3],
+            padding: [0.0; 3],
         }
     }
 }
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Param(i32, f32, f64);
