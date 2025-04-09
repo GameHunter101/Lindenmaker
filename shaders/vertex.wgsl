@@ -10,6 +10,6 @@ struct VertexOutput {
 @vertex
 fn main(input: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    out.pos = vec4f(f32(input.index) * input.position, 1.0);
+    out.pos = vec4f(input.position, 1.0);
     return out;
 }

@@ -1,7 +1,7 @@
 use v4::{
     builtin_components::mesh_component::MeshComponent, component, ecs::{
         actions::ActionQueue,
-        component::{ComponentId, ComponentSystem}, compute::Compute, material::ShaderAttachment,
+        component::{ComponentDetails, ComponentId, ComponentSystem}, material::ShaderAttachment,
     }
 };
 use wgpu::Buffer;
@@ -24,6 +24,7 @@ impl ComponentSystem for LindenmayerComponent {
         _queue: &wgpu::Queue,
         _input_manager: &winit_input_helper::WinitInputHelper,
         other_components: &[&mut v4::ecs::component::Component],
+        computes: &[v4::ecs::compute::Compute],
         _materials: &[&mut v4::ecs::material::Material],
         _engine_details: &v4::EngineDetails,
         _workload_outputs: &std::collections::HashMap<
@@ -38,19 +39,20 @@ impl ComponentSystem for LindenmayerComponent {
         _active_camera: Option<ComponentId>,
     ) -> ActionQueue {
         if self.compute_buffer.is_none() && self.vertex_buffer.is_none() {
-            for comp in other_components {
-                if comp.id() == self.compute_component {
-                    let compute: &Compute = comp.downcast_ref().expect("Bad compute component ID");
+            for compute in computes {
+                if compute.id() == self.compute_component {
                     if let Some(ShaderAttachment::Buffer(attachment)) = compute.output_attachments() {
                         let buffer = attachment.buffer().clone();
                         self.compute_buffer = Some(buffer);
                     }
                 }
 
+            }
+            for comp in other_components {
                 if comp.id() == self.mesh_component {
-                    let compute: &MeshComponent<Vertex> = comp.downcast_ref().expect("Bad mesh component ID");
-                    if let Some(buffers) = compute.vertex_buffer() {
-                        self.compute_buffer = Some(buffers[0].clone());
+                    let mesh: &MeshComponent<Vertex> = comp.downcast_ref().expect("Bad mesh component ID");
+                    if let Some(buffers) = mesh.vertex_buffer() {
+                        self.vertex_buffer = Some(buffers[0].clone());
                     }
                 }
             }

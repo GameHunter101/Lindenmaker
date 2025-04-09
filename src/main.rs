@@ -2,6 +2,7 @@ use core::f32;
 use std::collections::{HashMap, HashSet};
 
 use lindenmayer::{progress, separate_stack_strings};
+use lindenmayer_component::LindenmayerComponent;
 use v4::{
     V4,
     builtin_components::mesh_component::{MeshComponent, VertexDescriptor},
@@ -19,26 +20,28 @@ mod lindenmayer_component;
 #[tokio::main]
 async fn main() {
     let mut rules = HashMap::new();
-    rules.insert('X', "F+[[X]-X]-F[-FX]+X".to_string());
-    rules.insert('F', "FF".to_string());
+    /* rules.insert('X', "F+[[X]-X]-F[-FX]+X".to_string());
+    rules.insert('F', "FF".to_string()); */
+    rules.insert('F', "F+F-F-F+F".to_string());
 
-    let string = (0..4).fold("-X".to_string(), |acc, _| {
-        progress(&acc, &['+', '-', '[', ']'], &rules)
+    let string = (0..3).fold("F".to_string(), |acc, _| {
+        progress(&acc, &['+', '-'], &rules)
     });
-    println!("String: {string}");
-    let strings = separate_stack_strings(&string);
+    println!("String: {string}, {}", string.len());
+    /* let strings = separate_stack_strings(&string);
     let mut l_test = String::new();
     for string in &strings {
         l_test = "[".to_string() + &l_test + "]" + string;
     }
-    println!("{l_test}");
+    println!("{l_test}"); */
 
     let mut engine = V4::builder()
         .features(wgpu::Features::POLYGON_MODE_LINE)
         .build()
         .await;
 
-    let string = "F+F-F-F+F";
+    // let string = "F+F-F-F+F+F+F-F-F+F-F+F-F-F+F-F+F-F-F+F+F+F-F-F+F";
+    
 
     let alphabet: Vec<char> = vec!['F', '+', '-']; //string.chars().collect::<HashSet<_>>().into_iter().collect();
     let string_as_nums: Vec<u32> = string
@@ -48,29 +51,8 @@ async fn main() {
 
     let device = engine.rendering_manager().device();
 
-    /* let matrices = [
-        nalgebra::Matrix3::new(1.0, 0.0, 0.1, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
-        nalgebra::Rotation2::new(f32::consts::FRAC_PI_2).to_homogeneous(),
-        nalgebra::Rotation2::new(-f32::consts::FRAC_PI_2).to_homogeneous(),
-    ]; */
-
-    /* let raw_matrices: [[[f32; 4]; 3]; 3] = matrices
-    .into_iter()
-    .map(|mat| {
-        let arrs = nalgebra::Matrix4x3::from_rows(&[
-            mat.row(0).into(),
-            mat.row(1).into(),
-            mat.row(2).into(),
-            nalgebra::RowVector3::new(0.0_f32, 0.0, 0.0),
-        ]);
-        arrs.into()
-    })
-    .collect::<Vec<_>>()
-    .try_into()
-    .unwrap(); */
-
     let params = [
-        Param(0, 0.1, 0.0),
+        Param(0, 0.05, 0.0),
         Param(1, f32::consts::FRAC_PI_2, 0.0),
         Param(1, -f32::consts::FRAC_PI_2, 0.0),
     ];
@@ -93,22 +75,16 @@ async fn main() {
             },
             components: [
                 MeshComponent(
-                    vertices: vec![vec![
-                        Vertex {
-                            pos: [-0.2, 0.2, 0.0],
-                        },
-                        Vertex {
-                            pos: [-0.2, -0.2, 0.0],
-                        },
-                        Vertex {
-                            pos: [-0.2, -0.2, 0.0],
-                        },
-                        Vertex {
-                            pos: [-0.2, -0.2, 0.0],
-                        },
-                    ]],
-                    indices: vec![vec![0, 1, 2, 3]],
+                    vertices: vec![vec![ Vertex { pos: [-0.2, 0.2, 0.0], }; 250 ]],
+                    indices: vec![(0..250).collect()],
                     enabled_models: vec![0],
+                    ident: "mesh"
+                ),
+                LindenmayerComponent(
+                    compute_component: 5,
+                    mesh_component: ident("mesh"),
+                    compute_buffer: None,
+                    vertex_buffer: None,
                 ),
             ],
             computes: [
@@ -119,7 +95,8 @@ async fn main() {
                                 device,
                                 bytemuck::cast_slice(&string_as_nums),
                                 wgpu::BufferBindingType::Storage { read_only: true },
-                                wgpu::ShaderStages::COMPUTE
+                                wgpu::ShaderStages::COMPUTE,
+                                wgpu::BufferUsages::empty(),
                             )
                         ),
                         ShaderAttachment::Buffer(
@@ -127,7 +104,8 @@ async fn main() {
                                 device,
                                 bytemuck::cast_slice(&[params]),
                                 wgpu::BufferBindingType::Uniform,
-                                wgpu::ShaderStages::COMPUTE
+                                wgpu::ShaderStages::COMPUTE,
+                                wgpu::BufferUsages::empty(),
                             )
                         )
                     ],
@@ -137,11 +115,13 @@ async fn main() {
                                 device,
                                 bytemuck::cast_slice(&[VertexPositions::default()]),
                                 wgpu::BufferBindingType::Storage { read_only: false },
-                                wgpu::ShaderStages::COMPUTE
+                                wgpu::ShaderStages::COMPUTE,
+                                wgpu::BufferUsages::COPY_SRC,
                             )
                         ),
                     shader_path: "./shaders/compute.wgsl",
                     workgroup_counts: (1, 1, 1),
+                    id: 5,
                 )
             ]
         }
@@ -171,17 +151,17 @@ impl VertexDescriptor for Vertex {
 #[repr(C)]
 #[derive(Debug, bytemuck::Pod, bytemuck::Zeroable, Clone, Copy)]
 pub struct VertexPositions {
-    positions: [[f32; 4]; 20],
-    count: u32,
-    padding: [f32; 3],
+    positions: [[f32; 3]; 250],
+    // count: u32,
+    // padding: [f32; 4],
 }
 
 impl Default for VertexPositions {
     fn default() -> Self {
         Self {
-            positions: [[0.0; 4]; 20],
-            count: 0,
-            padding: [0.0; 3],
+            positions: [[0.0; 3]; 250],
+            // count: 0,
+            // padding: [0.0; 4],
         }
     }
 }
