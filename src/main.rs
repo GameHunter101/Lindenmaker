@@ -2,7 +2,7 @@ use core::f32;
 use std::collections::HashMap;
 
 use spawner_component::SpawnerComponent;
-use v4::{ V4, builtin_components::mesh_component::VertexDescriptor, scene};
+use v4::{V4, builtin_components::mesh_component::VertexDescriptor, scene};
 use wgpu::vertex_attr_array;
 
 mod lindenmayer;
@@ -19,7 +19,6 @@ async fn main() {
         .features(wgpu::Features::POLYGON_MODE_LINE)
         .build()
         .await;
-
 
     let params = vec![
         Param(0, 0.0, 0.0),
@@ -50,7 +49,7 @@ async fn main() {
                 ident: "mat",
             },
             components: [
-                SpawnerComponent::new("-X", rules, &['+', '-', '[', ']'], 4, ident("mat"), params, char_number_mapping)
+                SpawnerComponent::new("-X", rules, &['+', '-', '[', ']'], 4, ident("mat"), params, char_number_mapping, "./shaders/compute.wgsl")
             ],
         }
     };
@@ -72,24 +71,6 @@ impl VertexDescriptor for Vertex {
     fn from_pos_normal_coords(pos: Vec<f32>, _normal: Vec<f32>, _tex_coords: Vec<f32>) -> Self {
         Self {
             pos: pos.try_into().unwrap(),
-        }
-    }
-}
-
-#[repr(C)]
-#[derive(Debug, bytemuck::Pod, bytemuck::Zeroable, Clone, Copy)]
-pub struct VertexPositions {
-    positions: [[f32; 3]; 250],
-    // count: u32,
-    // padding: [f32; 4],
-}
-
-impl Default for VertexPositions {
-    fn default() -> Self {
-        Self {
-            positions: [[0.0; 3]; 250],
-            // count: 0,
-            // padding: [0.0; 4],
         }
     }
 }
