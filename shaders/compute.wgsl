@@ -10,7 +10,7 @@ struct Param {
     padding: vec2<f32>,
 }
 
-@group(0) @binding(0) var<storage, read> input: array<u32>;
+@group(0) @binding(0) var<storage, read> input: array<array<u32, 250>>;
 @group(1) @binding(0) var<uniform> params: array<Param, 3>;
 @group(2) @binding(0) var<storage, read_write> output: array<Vert>;
 
@@ -23,12 +23,15 @@ const PI:f32 = 3.14159265;
 @compute
 @workgroup_size(1)
 fn main() {
-    var pos = vec3f(0.0, 0.0, 0.1);
+    var pos = vec3f(-0.8, -0.8, 0.1);
     output[0] = Vert(pos.x, pos.y, pos.z);
-    var angle = 0.0;
+    var angle = PI / 2.0;
     var count = 1u;
-    for (var i = 0u; i < arrayLength(&input); i++) {
-        let val = input[i];
+    for (var i = 0u; i < 250; i++) {
+        let val = input[0][i];
+        if (val == 100) {
+            continue;
+        }
         let param = params[val];
         switch param.action {
             case 0: {

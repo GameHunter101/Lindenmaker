@@ -1,18 +1,8 @@
 use core::f32;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use lindenmayer::{progress, separate_stack_strings};
-use lindenmayer_component::LindenmayerComponent;
 use spawner_component::SpawnerComponent;
-use v4::{
-    V4,
-    builtin_components::mesh_component::{MeshComponent, VertexDescriptor},
-    ecs::{
-        compute::Compute,
-        material::{ShaderAttachment, ShaderBufferAttachment},
-    },
-    scene,
-};
+use v4::{ V4, builtin_components::mesh_component::VertexDescriptor, scene};
 use wgpu::vertex_attr_array;
 
 mod lindenmayer;
@@ -22,41 +12,25 @@ mod spawner_component;
 #[tokio::main]
 async fn main() {
     let mut rules = HashMap::new();
-    /* rules.insert('X', "F+[[X]-X]-F[-FX]+X".to_string());
-    rules.insert('F', "FF".to_string()); */
-    rules.insert('F', "F-G+F+G-F".to_string());
-    rules.insert('G', "GG".to_string());
-
-    let string = (0..4).fold("F-G-G".to_string(), |acc, _| {
-        progress(&acc, &['+', '-'], &rules)
-    });
-
-    let strings = separate_stack_strings(&string);
+    rules.insert('X', "F+[[X]-X]-F[-FX]+X".to_string());
+    rules.insert('F', "FF".to_string());
 
     let mut engine = V4::builder()
         .features(wgpu::Features::POLYGON_MODE_LINE)
         .build()
         .await;
 
-    // let string = "F+F-F-F+F+F+F-F-F+F-F+F-F-F+F-F+F-F-F+F+F+F-F-F+F";
-    
-
-    let alphabet: Vec<char> = vec!['F', 'G', '+', '-']; //string.chars().collect::<HashSet<_>>().into_iter().collect();
-    let string_as_nums: Vec<u32> = string
-        .chars()
-        .map(|c| alphabet.iter().position(|e| *e == c).unwrap() as u32)
-        .collect();
-
-    let device = engine.rendering_manager().device();
 
     let params = vec![
-        Param(0, 0.05, 0.0),
-        Param(0, 0.05, 0.0),
-        Param(1, f32::consts::FRAC_PI_3 * 2.0, 0.0),
-        Param(1, -f32::consts::FRAC_PI_3 * 2.0, 0.0),
+        Param(0, 0.0, 0.0),
+        Param(0, 0.04, 0.0),
+        Param(1, 25.0 * f32::consts::PI / 180.0, 0.0),
+        Param(1, -25.0 * f32::consts::PI / 180.0, 0.0),
     ];
 
-    let char_number_mapping: HashMap<char, u32> = vec![('F', 0), ('G', 1), ('+', 2), ('-', 3)].into_iter().collect();
+    let char_number_mapping: HashMap<char, u32> = vec![('X', 0), ('F', 1), ('+', 2), ('-', 3)]
+        .into_iter()
+        .collect();
 
     scene! {
         scene: main,
@@ -76,58 +50,8 @@ async fn main() {
                 ident: "mat",
             },
             components: [
-                MeshComponent(
-                    vertices: vec![vec![ Vertex { pos: [0.0, 0.0, 0.0], }; 250 ]],
-                    indices: vec![(0..250).collect()],
-                    enabled_models: vec![0],
-                    ident: "mesh"
-                ),
-                LindenmayerComponent(
-                    compute_component: 5,
-                    mesh_component: ident("mesh"),
-                    compute_buffer: None,
-                    vertex_buffer: None,
-                    ident: "thing",
-                ),
-                SpawnerComponent::new("F-G-G", rules, &['+', '-'], 3, ident("mat"), params, char_number_mapping)
+                SpawnerComponent::new("-X", rules, &['+', '-', '[', ']'], 4, ident("mat"), params, char_number_mapping)
             ],
-            /* computes: [
-                Compute(
-                    input: vec![
-                        ShaderAttachment::Buffer(
-                            ShaderBufferAttachment::new(
-                                device,
-                                bytemuck::cast_slice(&string_as_nums),
-                                wgpu::BufferBindingType::Storage { read_only: true },
-                                wgpu::ShaderStages::COMPUTE,
-                                wgpu::BufferUsages::empty(),
-                            )
-                        ),
-                        ShaderAttachment::Buffer(
-                            ShaderBufferAttachment::new(
-                                device,
-                                bytemuck::cast_slice(&[params]),
-                                wgpu::BufferBindingType::Uniform,
-                                wgpu::ShaderStages::COMPUTE,
-                                wgpu::BufferUsages::empty(),
-                            )
-                        )
-                    ],
-                    output:
-                        ShaderAttachment::Buffer(
-                            ShaderBufferAttachment::new(
-                                device,
-                                bytemuck::cast_slice(&[VertexPositions::default()]),
-                                wgpu::BufferBindingType::Storage { read_only: false },
-                                wgpu::ShaderStages::COMPUTE,
-                                wgpu::BufferUsages::COPY_SRC,
-                            )
-                        ),
-                    shader_path: "./shaders/compute.wgsl",
-                    workgroup_counts: (1, 1, 1),
-                    id: 5,
-                )
-            ] */
         }
     };
 

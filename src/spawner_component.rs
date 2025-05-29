@@ -5,7 +5,7 @@ use v4::{
     builtin_components::mesh_component::MeshComponent,
     component,
     ecs::{
-        actions::Action,
+        actions::{Action, ActionQueue},
         component::{ComponentDetails, ComponentId, ComponentSystem},
         compute::Compute,
         entity::EntityId,
@@ -58,21 +58,31 @@ impl SpawnerComponent {
 }
 
 impl ComponentSystem for SpawnerComponent {
-    fn initialize(&mut self, device: &wgpu::Device) -> v4::ecs::actions::ActionQueue {
-        self.strings
+    fn initialize(&mut self, device: &wgpu::Device) -> ActionQueue {
+        dbg!(self.strings.len());
+        let actions: ActionQueue = self
+            .strings
             .iter()
             .map(|str| {
                 let num_str: Vec<u32> = str.chars().map(|c| self.char_number_mapping[&c]).collect();
+                let len = num_str.len();
+                let num_arr: [u32; 250] = num_str
+                    .into_iter()
+                    .chain(vec![100; 250 - len])
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap();
 
                 let mesh_comp = MeshComponent::builder()
                     .vertices(vec![vec![Vertex { pos: [0.0; 3] }; 250]])
+                    .enabled_models(vec![0])
                     .build();
                 let compute = Compute::builder()
                     .shader_path("./shaders/compute.wgsl")
                     .input(vec![
                         ShaderAttachment::Buffer(ShaderBufferAttachment::new(
                             device,
-                            bytemuck::cast_slice(&num_str),
+                            bytemuck::cast_slice(&num_arr),
                             wgpu::BufferBindingType::Storage { read_only: true },
                             wgpu::ShaderStages::COMPUTE,
                             wgpu::BufferUsages::empty(),
@@ -94,6 +104,7 @@ impl ComponentSystem for SpawnerComponent {
                     )))
                     .workgroup_counts((1, 1, 1))
                     .build();
+
                 let l_comp = LindenmayerComponent::builder()
                     .mesh_component(mesh_comp.id())
                     .compute_component(compute.id())
@@ -106,6 +117,10 @@ impl ComponentSystem for SpawnerComponent {
                     is_enabled: true,
                 }) as Box<dyn Action + Send>
             })
-            .collect()
+            .collect();
+
+        self.set_initialized();
+
+        actions
     }
 }

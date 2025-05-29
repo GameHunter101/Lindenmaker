@@ -1,8 +1,11 @@
 use v4::{
-    builtin_components::mesh_component::MeshComponent, component, ecs::{
+    builtin_components::mesh_component::MeshComponent,
+    component,
+    ecs::{
         actions::ActionQueue,
-        component::{ComponentDetails, ComponentId, ComponentSystem}, material::ShaderAttachment,
-    }
+        component::{ComponentDetails, ComponentId, ComponentSystem},
+        material::ShaderAttachment,
+    },
 };
 use wgpu::Buffer;
 
@@ -11,8 +14,10 @@ use crate::{Vertex, VertexPositions};
 #[component]
 pub struct LindenmayerComponent {
     compute_component: ComponentId,
+    #[default(None)]
     compute_buffer: Option<Buffer>,
     mesh_component: ComponentId,
+    #[default(None)]
     vertex_buffer: Option<Buffer>,
 }
 
@@ -41,16 +46,17 @@ impl ComponentSystem for LindenmayerComponent {
         if self.compute_buffer.is_none() && self.vertex_buffer.is_none() {
             for compute in computes {
                 if compute.id() == self.compute_component {
-                    if let Some(ShaderAttachment::Buffer(attachment)) = compute.output_attachments() {
+                    if let Some(ShaderAttachment::Buffer(attachment)) = compute.output_attachments()
+                    {
                         let buffer = attachment.buffer().clone();
                         self.compute_buffer = Some(buffer);
                     }
                 }
-
             }
             for comp in other_components {
                 if comp.id() == self.mesh_component {
-                    let mesh: &MeshComponent<Vertex> = comp.downcast_ref().expect("Bad mesh component ID");
+                    let mesh: &MeshComponent<Vertex> =
+                        comp.downcast_ref().expect("Bad mesh component ID");
                     if let Some(buffers) = mesh.vertex_buffer() {
                         self.vertex_buffer = Some(buffers[0].clone());
                     }
@@ -70,7 +76,13 @@ impl ComponentSystem for LindenmayerComponent {
     ) {
         if let Some(compute_buffer) = &self.compute_buffer {
             if let Some(vertex_buffer) = &self.vertex_buffer {
-                encoder.copy_buffer_to_buffer(compute_buffer, 0, vertex_buffer, 0, std::mem::size_of::<VertexPositions>() as u64);
+                encoder.copy_buffer_to_buffer(
+                    compute_buffer,
+                    0,
+                    vertex_buffer,
+                    0,
+                    std::mem::size_of::<VertexPositions>() as u64,
+                );
             }
         }
     }
