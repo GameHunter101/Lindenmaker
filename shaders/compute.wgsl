@@ -1,4 +1,4 @@
-const MESHES: u32 = 256; const BUF_SIZE: u32 = 70;
+const MESHES: u32 = 1024; const BUF_SIZE: u32 = 110;
 struct Vert {
     x: f32,
     y: f32,

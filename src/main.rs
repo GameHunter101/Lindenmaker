@@ -1,6 +1,7 @@
 use core::f32;
 use std::collections::HashMap;
 
+use fps_component::FpsComponent;
 use spawner_component::SpawnerComponent;
 use v4::{V4, builtin_components::mesh_component::VertexDescriptor, scene};
 use wgpu::vertex_attr_array;
@@ -8,6 +9,7 @@ use wgpu::vertex_attr_array;
 mod lindenmayer;
 mod lindenmayer_component;
 mod spawner_component;
+mod fps_component;
 
 #[tokio::main]
 async fn main() {
@@ -22,7 +24,7 @@ async fn main() {
 
     let params = vec![
         Param(0, 0.0, 0.0),
-        Param(0, 0.04, 0.0),
+        Param(0, 0.01, 0.0),
         Param(1, 25.0 * f32::consts::PI / 180.0, 0.0),
         Param(1, -25.0 * f32::consts::PI / 180.0, 0.0),
     ];
@@ -41,7 +43,7 @@ async fn main() {
                     vertex_layouts: [Vertex::vertex_layout()],
                     uses_camera: false,
                     geometry_details: {
-                        topology: wgpu::PrimitiveTopology::LineStrip,
+                        topology: wgpu::PrimitiveTopology::LineList,
                         strip_index_format: Some(wgpu::IndexFormat::Uint16),
                         polygon_mode: wgpu::PolygonMode::Line,
                     }
@@ -49,7 +51,8 @@ async fn main() {
                 ident: "mat",
             },
             components: [
-                SpawnerComponent::new("-X", rules, &['+', '-', '[', ']'], 4, ident("mat"), params, char_number_mapping, "./shaders/compute.wgsl")
+                SpawnerComponent::new("-X", rules, &['+', '-', '[', ']'], 5, ident("mat"), params, char_number_mapping, "./shaders/compute.wgsl"),
+                FpsComponent()
             ],
         }
     };

@@ -3,7 +3,7 @@ use v4::{
     component,
     ecs::{
         actions::ActionQueue,
-        component::{ComponentDetails, ComponentId, ComponentSystem},
+        component::{ComponentDetails, ComponentId, ComponentSystem, UpdateParams},
         material::ShaderAttachment,
     },
 };
@@ -26,23 +26,11 @@ pub struct LindenmayerComponent {
 impl ComponentSystem for LindenmayerComponent {
     async fn update(
         &mut self,
-        _device: &wgpu::Device,
-        _queue: &wgpu::Queue,
-        _input_manager: &winit_input_helper::WinitInputHelper,
-        other_components: &[&mut v4::ecs::component::Component],
-        computes: &[v4::ecs::compute::Compute],
-        _materials: &[&mut v4::ecs::material::Material],
-        _engine_details: &v4::EngineDetails,
-        _workload_outputs: &std::collections::HashMap<
-            ComponentId,
-            Vec<v4::ecs::scene::WorkloadOutput>,
-        >,
-        _entities: &std::collections::HashMap<v4::ecs::entity::EntityId, v4::ecs::entity::Entity>,
-        _entity_component_groups: std::collections::HashMap<
-            v4::ecs::entity::EntityId,
-            std::ops::Range<usize>,
-        >,
-        _active_camera: Option<ComponentId>,
+        UpdateParams {
+            other_components,
+            computes,
+            ..
+        }: UpdateParams<'_>,
     ) -> ActionQueue {
         if self.compute_buffer.is_none() && self.vertex_buffers.is_none() {
             for compute in computes {

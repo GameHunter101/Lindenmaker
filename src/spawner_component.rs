@@ -29,7 +29,7 @@ pub struct SpawnerComponent {
 }
 
 impl SpawnerComponent {
-    pub const BUF_SIZE: usize = 70;
+    pub const BUF_SIZE: usize = 110;
     pub fn new(
         init_string: &str,
         rules: Rules,
@@ -132,19 +132,17 @@ impl ComponentSystem for SpawnerComponent {
                 Vertex { pos: [0.0; 3] };
                 SpawnerComponent::BUF_SIZE * self.strings.len()
             ]])
-            .enabled_models(
+            .indices(vec![
                 (0..self.strings.len())
-                    .map(|i| {
-                        (
-                            0_usize,
-                            Some(
-                                (i * SpawnerComponent::BUF_SIZE) as u64
-                                    ..((i + 1) * SpawnerComponent::BUF_SIZE) as u64,
-                            ),
-                        )
+                    .flat_map(|i| {
+                        (((i * SpawnerComponent::BUF_SIZE) as u32)
+                            ..((i + 1) * SpawnerComponent::BUF_SIZE - 1) as u32)
+                            .flat_map(|i| [i, i + 1])
+                            .collect::<Vec<_>>()
                     })
                     .collect(),
-            )
+            ])
+            .enabled_models(vec![(0, None)])
             .build();
 
         let l_comp = LindenmayerComponent::builder()
